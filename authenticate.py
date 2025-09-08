@@ -1,45 +1,49 @@
 """Create login credentials for Strava.com and save them as cookies"""
 
-import pickle
-import time
 import os
+import pickle
+from time import sleep
+
 from selenium import webdriver
-from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
 
 
 def authenticate():
     """Login to Strava and save the authentication cookies to a file, so we can reuse it later"""
-    email = os.getenv("STRAVA_USERNAME")
-    password = os.getenv("STRAVA_PASSWORD")
+    STRAVA_EMAIL = os.getenv("STRAVA_EMAIL")
+    STRAVA_PASSWORD = os.getenv("STRAVA_PASSWORD")
 
     # Initialize Chrome browser with Selenium
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
+    driver = webdriver.Firefox()
 
     # Open Strava login page
     driver.get("https://www.strava.com/login")
 
     # Give time for the page to load
-    time.sleep(3)
+    sleep(5)
 
-    # Find the email and password input fields and log in
-    email_field = driver.find_element(By.ID, "email")
-    password_field = driver.find_element(By.ID, "password")
+    # --- Step 1: enter email ---
+    driver.find_element(By.ID, "desktop-email").click()
+    driver.find_element(By.ID, "desktop-email").send_keys(STRAVA_EMAIL)
+    driver.find_element(By.ID, "desktop-login-button").click()
 
-    # Enter your credentials
-    email_field.send_keys(email)
-    password_field.send_keys(password)
+    sleep(5)
 
-    # Submit the form by simulating pressing the Enter key
-    password_field.send_keys(Keys.RETURN)
+    driver.find_element(By.CSS_SELECTOR, ".DesktopLayout_desktopPanel__OKWGk .Button_text__d_3rf").click()
 
-    # Wait for a while to let the login process complete (adjust as needed)
-    time.sleep(3)
+    sleep(5)
 
+    driver.find_element(By.CSS_SELECTOR, ".DesktopLayout_desktopPanel__OKWGk .Input_input__zN25R").click()
+    driver.find_element(By.CSS_SELECTOR, ".DesktopLayout_desktopPanel__OKWGk .Input_input__zN25R").send_keys(STRAVA_PASSWORD)
+    driver.find_element(By.CSS_SELECTOR, ".DesktopLayout_desktopPanel__OKWGk .OTPCTAButton_ctaButtonContainer__b2rKX > .Button_btn__EdK33").click()
+
+    sleep(5)
+
+    # --- Step 4: Save Cookies ---
     with open("cookies.pkl", "wb") as file:
         pickle.dump(driver.get_cookies(), file)
+
+    driver.close()
 
 
 def main():

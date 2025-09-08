@@ -4,18 +4,16 @@ information and write the results in a CSV file.
 Written by Dominik Rappaport, dominik@rappaport.at, 2024
 """
 
+import argparse
+import csv
+import pickle
 import sys
 import time
-import pickle
-import csv
-import argparse
-
 from typing import List, Dict, Tuple, Optional
+
 from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.service import Service
 from selenium.common.exceptions import WebDriverException, NoSuchElementException
-from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.common.by import By
 
 FILENAME_STATE = "state.pkl"
 FILENAME_COOKIES = "cookies.pkl"
@@ -59,7 +57,7 @@ class SegmentDownloader:
         self.segment_id: str = segment_id
         self.completed_phase: int = 0
         self.completed_page: int = 0
-        self.driver: webdriver.Chrome = self.__create_driver()
+        self.driver: webdriver.Firefox = self.__create_driver()
 
         self.leaderboard_data: Dict[LeaderBoardFilterType, LeaderBoardType] = \
             {(None, None, None): []}
@@ -95,15 +93,14 @@ class SegmentDownloader:
         self.driver = self.__create_driver()
 
     @staticmethod
-    def __create_driver() -> webdriver.Chrome:
+    def __create_driver() -> webdriver.Firefox:
         """Login to Strava using the cookies and return the driver.
 
         :return: The driver
 
         :exception SegmentDownloaderException: If the driver can't be created or"""
         try:
-            driver: webdriver.Chrome = \
-                webdriver.Chrome(service=Service(ChromeDriverManager().install()))
+            driver: webdriver.Firefox = webdriver.Firefox()
             driver.get("https://www.strava.com")
 
             with open(FILENAME_COOKIES, "rb") as file:
