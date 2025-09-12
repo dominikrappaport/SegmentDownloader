@@ -49,6 +49,17 @@ To make the script work in such a condition, the user can interrupt the script u
 and continue another day. With the switch `--resume` it continues where it left off. Obviously that
 may introduce inconsistencies in the data as the leaderboard may have changed in the meantime.
 
+Furthermore, Strava enforces a rate limit to prevent people from accessing their site too frequently. Again, that 
+works against us. If that rate limit kicks in, the website freezes in state "Loading". The script will typically 
+throw the following error message:
+
+```bash
+Error: Can't navigate to the next page (Element <a href="/segments/..."> is not clickable at point (856,935) because another element <div class="loading-panel"> obscures it).
+```
+
+Please refer to section [Usage with large segments](#usage-with-large-segments) for further details how to deal with
+such challenges.
+
 # How to use the script
 
 ## Installation
@@ -97,9 +108,29 @@ If you want to continue where you left off, you can use the `--resume` switch:
 python segment_downloader.py --resume 12345678
 ```
 
+## Usage with large segments
+
+To work around Strava's rate limit we recommend the following strategy:
+
+1. Download the segment in smaller chunks. At the moment, the script throws an error message when it gets blocked by Strava and the
+   effort to download was in vain.
+2. You can use Ctrl+C and then the `resume` option to interrupt and resume the download. Then, possibly interrupt again and resume again etc.
+3. This can be automated with a tool like `gtimeout`. The following example illustrates how to download a large segment in junks of 10 minutes.
+
+```bash
+# First download
+gtimeout -f -s INT 10m python segment_downloader.py 2891805
+# Call the script with the resume option as often as needed by repeating the following line:
+gtimeout -f -s INT 10m python segment_downloader.py --resume 2891805
+```
+
+Note: By default `gtimeout` repeats the signal if the script doesn't exit instantly. As we catch SIGINT and save the data, sending the signal
+a second time breaks the script. That will hopefully be fixed in the future. In the meantime, we use the `-f` option to prevent that. Of course
+above mentioned approach could also be implemented manually, without tools like gtimeout.
+
 # Notes and Warnings
 
-- The script uses the Chrome browser and expects the Strava page to be in English. It may fail if
+- The script uses the Firefox browser and expects the Strava page to be in English. It may fail if
   the pages are in a different language because we identify for examples buttons or the categories
   with their labels.
 - The script tries to compile a single leaderboard list with all data in one table. In Strava for

@@ -106,6 +106,7 @@ class SegmentDownloader:
             with open(FILENAME_COOKIES, "rb") as file:
                 cookies = pickle.load(file)
                 for cookie in cookies:
+                    cookie["secure"] = True
                     driver.add_cookie(cookie)
 
             return driver
