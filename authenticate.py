@@ -10,7 +10,7 @@ from selenium.webdriver.common.by import By
 
 def authenticate():
     """Login to Strava and save the authentication cookies to a file, so we can reuse it later"""
-    STRAVA_EMAIL = os.getenv("STRAVA_EMAIL")
+    STRAVA_USERNAME = os.getenv("STRAVA_USERNAME")
     STRAVA_PASSWORD = os.getenv("STRAVA_PASSWORD")
 
     # Initialize Chrome browser with Selenium
@@ -24,7 +24,7 @@ def authenticate():
 
     # --- Step 1: enter email ---
     driver.find_element(By.ID, "desktop-email").click()
-    driver.find_element(By.ID, "desktop-email").send_keys(STRAVA_EMAIL)
+    driver.find_element(By.ID, "desktop-email").send_keys(STRAVA_USERNAME)
     driver.find_element(By.ID, "desktop-login-button").click()
 
     sleep(5)
