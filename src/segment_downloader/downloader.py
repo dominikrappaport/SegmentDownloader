@@ -4,10 +4,8 @@ information and write the results in a CSV file.
 Written by Dominik Rappaport, dominik@rappaport.at, 2024
 """
 
-import argparse
 import csv
 import pickle
-import sys
 import time
 from typing import List, Dict, Tuple, Optional
 
@@ -15,34 +13,17 @@ from selenium import webdriver
 from selenium.common.exceptions import WebDriverException, NoSuchElementException
 from selenium.webdriver.common.by import By
 
-FILENAME_STATE = "state.pkl"
-FILENAME_COOKIES = "cookies.pkl"
-CATEGORIES_SEX = ["Men", "Women"]
-CATEGORIES_AGE = [
-    "19 and under",
-    "20 to 24",
-    "25 to 34",
-    "35 to 44",
-    "45 to 54",
-    "55 to 64",
-    "65 to 69",
-    "70 to 74",
-    "75+"]
-CATEGORIES_WEIGHT = [
-    "54 kg and under",
-    "55 to 64 kg",
-    "65 to 74 kg",
-    "75 to 84 kg",
-    "85 to 94 kg",
-    "95 kg to 104 kg",
-    "105 kg to 114 kg",
-    "115 kg and over"]
+from .constants import (
+    FILENAME_STATE,
+    FILENAME_COOKIES,
+    CATEGORIES_SEX,
+    CATEGORIES_AGE,
+    CATEGORIES_WEIGHT,
+)
+from .exceptions import SegmentDownloaderException
+
 LeaderBoardType = List[Dict[str, Optional[str]]]
 LeaderBoardFilterType = Tuple[Optional[str], Optional[str], Optional[str]]
-
-
-class SegmentDownloaderException(Exception):
-    """Custom exception for the SegmentDownloader programme."""
 
 
 class SegmentDownloader:
@@ -59,8 +40,9 @@ class SegmentDownloader:
         self.completed_page: int = 0
         self.driver: webdriver.Firefox = self.__create_driver()
 
-        self.leaderboard_data: Dict[LeaderBoardFilterType, LeaderBoardType] = \
-            {(None, None, None): []}
+        self.leaderboard_data: Dict[LeaderBoardFilterType, LeaderBoardType] = {
+            (None, None, None): []
+        }
 
         for s in CATEGORIES_SEX:
             for a in CATEGORIES_AGE:
@@ -77,7 +59,9 @@ class SegmentDownloader:
         try:
             self.driver.quit()
         except WebDriverException as exc:
-            raise SegmentDownloaderException(f"Can't close the driver ({exc.msg}).") from exc
+            raise SegmentDownloaderException(
+                f"Can't close the driver ({exc.msg})."
+            ) from exc
 
     def __getstate__(self):
         """Return the state of the object for pickling. We need to override this methode to
@@ -111,9 +95,13 @@ class SegmentDownloader:
 
             return driver
         except WebDriverException as exc:
-            raise SegmentDownloaderException(f"Can't create the driver ({exc.msg}).") from exc
+            raise SegmentDownloaderException(
+                f"Can't create the driver ({exc.msg})."
+            ) from exc
         except (IOError, pickle.PickleError) as exc:
-            raise SegmentDownloaderException(f"Can't load the cookies ({exc}).") from exc
+            raise SegmentDownloaderException(
+                f"Can't load the cookies ({exc})."
+            ) from exc
 
     def __go_to_segment_page(self) -> None:
         """Navigate to the segment page.
@@ -130,7 +118,8 @@ class SegmentDownloader:
         except WebDriverException as exc:
             raise SegmentDownloaderException(
                 f"Can't retrieve the segment page "
-                f"for segment {self.segment_id} ({exc.msg}).") from exc
+                f"for segment {self.segment_id} ({exc.msg})."
+            ) from exc
 
     def __go_to_leaderboard_page(self) -> None:
         """Jump forward to the given leaderboard page.
@@ -143,10 +132,12 @@ class SegmentDownloader:
         left = old_href.find("page=") + 5
         right = old_href[left:].find("&")
 
-        new_href = old_href[:left] + str(self.completed_page + 1) + old_href[left:][right:]
+        new_href = (
+            old_href[:left] + str(self.completed_page + 1) + old_href[left:][right:]
+        )
 
         self.driver.execute_script(
-            f"document.getElementById(\"results\").getElementsByClassName(\"next_page\")"
+            f'document.getElementById("results").getElementsByClassName("next_page")'
             f"[0].children[0].setAttribute('href', '{new_href}')"
         )
         button.click()
@@ -160,10 +151,17 @@ class SegmentDownloader:
         leaderboard_data: LeaderBoardType = []
 
         try:
-            rows = self.driver.find_elements(By.XPATH, "//*[@id=\"results\"]/table/tbody/tr")
-            heads = self.driver.find_elements(By.XPATH, "//*[@id=\"results\"]/table/thead/tr")
+            rows = self.driver.find_elements(
+                By.XPATH, '//*[@id="results"]/table/tbody/tr'
+            )
+            heads = self.driver.find_elements(
+                By.XPATH, '//*[@id="results"]/table/thead/tr'
+            )
 
-            if not rows[0].find_element(By.XPATH, ".//td[1]").text == "No results found":
+            if (
+                not rows[0].find_element(By.XPATH, ".//td[1]").text
+                == "No results found"
+            ):
                 is_climb = heads[0].find_element(By.XPATH, ".//th[7]").text == "VAM"
 
                 for row in rows:
@@ -176,27 +174,36 @@ class SegmentDownloader:
                     hr = fifth_column[:-4] if fifth_column != "-" else None
 
                     sixth_column = row.find_element(By.XPATH, ".//td[6]").text
-                    power = sixth_column[:-14] if sixth_column.endswith("Power Meter") else None
+                    power = (
+                        sixth_column[:-14]
+                        if sixth_column.endswith("Power Meter")
+                        else None
+                    )
 
                     if is_climb:
-                        vam = row.find_element(By.XPATH, ".//td[7]").text.replace(",", "")
+                        vam = row.find_element(By.XPATH, ".//td[7]").text.replace(
+                            ",", ""
+                        )
                         time_to_finish = row.find_element(By.XPATH, ".//td[8]").text
                     else:
                         time_to_finish = row.find_element(By.XPATH, ".//td[7]").text
                         vam = None
 
-                    leaderboard_data.append({
-                        "Name": name,
-                        "Date": date,
-                        "Speed": speed,
-                        "Heart rate": hr,
-                        "Power": power,
-                        "VAM": vam,
-                        "Time": time_to_finish
-                    })
+                    leaderboard_data.append(
+                        {
+                            "Name": name,
+                            "Date": date,
+                            "Speed": speed,
+                            "Heart rate": hr,
+                            "Power": power,
+                            "VAM": vam,
+                            "Time": time_to_finish,
+                        }
+                    )
         except WebDriverException as exc:
             raise SegmentDownloaderException(
-                f"Can't read the leaderboard table ({exc.msg}).") from exc
+                f"Can't read the leaderboard table ({exc.msg})."
+            ) from exc
 
         return leaderboard_data
 
@@ -214,7 +221,9 @@ class SegmentDownloader:
         try:
             self.__apply_filters(filters)
         except WebDriverException as exc:
-            raise SegmentDownloaderException(f"Can't apply the filters ({exc.msg}).") from exc
+            raise SegmentDownloaderException(
+                f"Can't apply the filters ({exc.msg})."
+            ) from exc
 
         while True:
             try:
@@ -230,28 +239,36 @@ class SegmentDownloader:
                 break
             except WebDriverException as exc:
                 raise SegmentDownloaderException(
-                    f"Can't navigate to the next page ({exc.msg}).") from exc
+                    f"Can't navigate to the next page ({exc.msg})."
+                ) from exc
 
     def __apply_filters(self, filters: Dict[str, str]) -> None:
         """Apply the filters to the leaderboard view."""
         if "age" in filters:
-            self.driver.find_element(By.CSS_SELECTOR, "li:nth-child(11) .expand").click()
+            self.driver.find_element(
+                By.CSS_SELECTOR, "li:nth-child(11) .expand"
+            ).click()
             time.sleep(3)
             self.driver.find_element(By.LINK_TEXT, filters["age"]).click()
             time.sleep(3)
         if "weight" in filters:
-            self.driver.find_element(By.CSS_SELECTOR, "li:nth-child(10) .expand").click()
+            self.driver.find_element(
+                By.CSS_SELECTOR, "li:nth-child(10) .expand"
+            ).click()
             time.sleep(3)
             self.driver.find_element(By.LINK_TEXT, filters["weight"]).click()
             time.sleep(3)
         if "sex" in filters:
-            self.driver.find_element(By.CSS_SELECTOR,
-                                     ".text-nowrap:nth-child(4) .btn").click()
+            self.driver.find_element(
+                By.CSS_SELECTOR, ".text-nowrap:nth-child(4) .btn"
+            ).click()
             time.sleep(3)
             self.driver.find_element(By.LINK_TEXT, filters["sex"]).click()
             time.sleep(3)
 
-    def __scrape_current_leaderboard(self, filters: Dict[str, str], phase_counter: int) -> None:
+    def __scrape_current_leaderboard(
+        self, filters: Dict[str, str], phase_counter: int
+    ) -> None:
         """Scape the leaderboard and return the dictionary.
 
         :param filters: The filters to apply to the table
@@ -279,19 +296,25 @@ class SegmentDownloader:
 
             for s in CATEGORIES_SEX:
                 for a in CATEGORIES_AGE:
-                    self.__scrape_current_leaderboard({"sex": s, "age": a}, phase_counter)
+                    self.__scrape_current_leaderboard(
+                        {"sex": s, "age": a}, phase_counter
+                    )
                     phase_counter += 1
 
             for s in CATEGORIES_SEX:
                 for w in CATEGORIES_WEIGHT:
-                    self.__scrape_current_leaderboard({"sex": s, "weight": w}, phase_counter)
+                    self.__scrape_current_leaderboard(
+                        {"sex": s, "weight": w}, phase_counter
+                    )
                     phase_counter += 1
 
             self.__add_attributes()
 
             self.__write_to_csv()
         except WebDriverException as exc:
-            raise SegmentDownloaderException(f"Can't close the driver ({exc.msg}).") from exc
+            raise SegmentDownloaderException(
+                f"Can't close the driver ({exc.msg})."
+            ) from exc
 
     def __add_attributes(self) -> None:
         """Add the attributes to the leaderboard data."""
@@ -323,8 +346,19 @@ class SegmentDownloader:
         """Write the data to a CSV file.
 
         :exception SegmentDownloaderException: If the data can't be written to a CSV file."""
-        field_names: List[str] = ["Position", "Name", "Date", "Speed", "Heart rate", "Power",
-                                  "VAM", "Time", "Sex", "Age group", "Weight group"]
+        field_names: List[str] = [
+            "Position",
+            "Name",
+            "Date",
+            "Speed",
+            "Heart rate",
+            "Power",
+            "VAM",
+            "Time",
+            "Sex",
+            "Age group",
+            "Weight group",
+        ]
         filename: str = f"leaderboard_{self.segment_id}.csv"
 
         try:
@@ -334,7 +368,8 @@ class SegmentDownloader:
                 writer.writerows(self.leaderboard_data[(None, None, None)])
         except (IOError, csv.Error) as exc:
             raise SegmentDownloaderException(
-                f"Can't write the leaderboard data to a CSV file ({exc})") from exc
+                f"Can't write the leaderboard data to a CSV file ({exc})"
+            ) from exc
 
     def save_state(self) -> None:
         """Save the current state of the SegmentDownloader object.
@@ -358,30 +393,3 @@ class SegmentDownloader:
                 return pickle.load(file)
         except (IOError, pickle.PickleError) as exc:
             raise SegmentDownloaderException(f"Can't load the state ({exc}).") from exc
-
-
-def main() -> None:
-    """Main function to download the leaderboard data."""
-    try:
-        parser = argparse.ArgumentParser(description="Process a Strava segment.")
-        parser.add_argument("segment_id", type=int, help="The segment ID (numerical value)")
-        parser.add_argument("--resume", action="store_true",
-                            help="Resume from the last saved state if available.")
-
-        args = parser.parse_args()
-
-        leaderboard: SegmentDownloader = SegmentDownloader.load_state() \
-            if args.resume else SegmentDownloader(str(args.segment_id))
-
-        try:
-            leaderboard.scrape_leaderboard()
-        except KeyboardInterrupt:
-            leaderboard.save_state()
-            sys.exit(0)
-    except SegmentDownloaderException as exc:
-        print(f"Error: {exc}", file=sys.stderr)
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()

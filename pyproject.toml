@@ -1,0 +1,17 @@
+[project]
+name = "segment_downloader"
+version = "0.1.0"
+description = "llows to fully download a Strava leaderboard and saves it into a CSV file for further statistical analysis"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "selenium~=4.25.0",
+]
+
+[project.scripts]
+segment_downloader = "segment_downloader.cli:main"
+segment_downloader_authenticate = "segment_downloader.authenticate:main"
+
+[build-system]
+requires = ["uv_build>=0.9.1,<0.10.0"]
+build-backend = "uv_build"
