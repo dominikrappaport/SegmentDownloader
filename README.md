@@ -64,12 +64,29 @@ such challenges.
 
 ## Installation
 
-Clone the repository and install the required Python packages:
+The segment_downloader is distributed as a Python package. Several installation methods are available.
+
+### Using pip
+
+Executing `pip` installs the package in your current Python environment. Global installation was once possible, but
+modern Linux distributions no longer permit this approach.
 
 ```bash
-git clone https://github.com/dominikrappaport/SegmentDownloader.git
-cd SegmentDownloader
-pip install -r requirements.txt
+pip install segment_downloader
+```
+
+### Using pipx or uv
+
+Both `pipx` and `uv` enable global tool installation. The package can be installed as follows:
+
+```bash
+pipx install segment_downloader
+```
+
+or
+
+```bash
+uv tool install segment_downloader
 ```
 
 ## Usage
@@ -86,7 +103,7 @@ GitHub actions together with the GitHub secrets.
 ```bash
 export STRAVA_USERNAME="your_username"
 export STRAVA_PASSWORD="your_password"
-python authenticate.py
+segment_downloader_authenticate
 ```
 
 The script saves the cookies in a file `cookies.pkl`. As of today, the filename is hardcoded.
@@ -94,7 +111,7 @@ The script saves the cookies in a file `cookies.pkl`. As of today, the filename 
 Then you can run the main script passing the segment ID as a command line parameter:
 
 ```bash
-python segment_downloader.py 12345678
+segment_downloader 12345678
 ```
 
 The script will download the leaderboard of the segment with the ID 12345678. It creates a CSV file with 
@@ -105,7 +122,7 @@ You can interrupt the script at any time using Ctrl+C as described above the par
 If you want to continue where you left off, you can use the `--resume` switch:
 
 ```bash
-python segment_downloader.py --resume 12345678
+segment_downloader --resume 12345678
 ```
 
 ## Usage with large segments
