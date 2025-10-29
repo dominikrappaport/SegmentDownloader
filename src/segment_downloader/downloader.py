@@ -38,6 +38,7 @@ class SegmentDownloader:
         self.segment_id: str = segment_id
         self.completed_phase: int = 0
         self.completed_page: int = 0
+        self.driver = None
         self.driver: webdriver.Firefox = self.__create_driver()
 
         self.leaderboard_data: Dict[LeaderBoardFilterType, LeaderBoardType] = {
@@ -57,7 +58,8 @@ class SegmentDownloader:
 
         :exception SegmentDownloaderException: If the driver can't be closed."""
         try:
-            self.driver.quit()
+            if self.driver is not None:
+                self.driver.quit()
         except WebDriverException as exc:
             raise SegmentDownloaderException(
                 f"Can't close the driver ({exc.msg})."
@@ -83,8 +85,9 @@ class SegmentDownloader:
         :return: The driver
 
         :exception SegmentDownloaderException: If the driver can't be created or"""
+        driver: Optional[webdriver.Firefox] = None
         try:
-            driver: webdriver.Firefox = webdriver.Firefox()
+            driver = webdriver.Firefox()
             driver.get("https://www.strava.com")
 
             with open(FILENAME_COOKIES, "rb") as file:
@@ -95,10 +98,14 @@ class SegmentDownloader:
 
             return driver
         except WebDriverException as exc:
+            if driver is not None:
+                driver.quit()
             raise SegmentDownloaderException(
                 f"Can't create the driver ({exc.msg})."
             ) from exc
-        except (IOError, pickle.PickleError) as exc:
+        except (FileNotFoundError, IOError, pickle.PickleError) as exc:
+            if driver is not None:
+                driver.quit()
             raise SegmentDownloaderException(
                 f"Can't load the cookies ({exc})."
             ) from exc
