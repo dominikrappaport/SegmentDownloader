@@ -28,7 +28,7 @@ __all__ = [
     "CATEGORIES_WEIGHT",
 ]
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 __author__ = "Dominik Rappaport"
 __email__ = "dominik@rappaport.at"
 __license__ = "MIT"
