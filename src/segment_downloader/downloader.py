@@ -211,6 +211,10 @@ class SegmentDownloader:
             raise SegmentDownloaderException(
                 f"Can't read the leaderboard table ({exc.msg})."
             ) from exc
+        except IndexError as exc:
+            raise SegmentDownloaderException(
+                f"Can't read the leaderboard table ({exc}). Either Strava changed the document structure or, more likely, an invalid segment ID was provided."
+            )
 
         return leaderboard_data
 
