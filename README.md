@@ -57,6 +57,7 @@ throw the following error message:
 Error: Can't navigate to the next page (Element <a href="/segments/..."> is not clickable at point (856,935) because another element <div class="loading-panel"> obscures it).
 ```
 
+
 Please refer to section [Usage with large segments](#usage-with-large-segments) for further details how to deal with
 such challenges.
 
@@ -70,6 +71,7 @@ The segment_downloader is distributed as a Python package. Several installation 
 
 Executing `pip` installs the package in your current Python environment. Global installation was once possible, but
 modern Linux distributions no longer permit this approach.
+
 
 ```bash
 pip install segment_downloader
@@ -125,6 +127,46 @@ If you want to continue where you left off, you can use the `--resume` switch:
 segment_downloader --resume 12345678
 ```
 
+### Filtering by Demographics
+
+You can filter the downloaded leaderboard data by sex, age group, and weight group. This significantly reduces 
+download time when you're only interested in specific demographic segments. Filters accept comma-separated values.
+
+**Available filter options:**
+
+- `--filter-sex`: Filter by sex
+  - Valid values: `Men`, `Women`
+- `--filter-age`: Filter by age group
+  - Valid values: `19 and under`, `20 to 24`, `25 to 34`, `35 to 44`, `45 to 54`, `55 to 64`, `65 to 69`, `70 to 74`, `75+`
+- `--filter-weight`: Filter by weight group
+  - Valid values: `54 kg and under`, `55 to 64 kg`, `65 to 74 kg`, `75 to 84 kg`, `85 to 94 kg`, `95 kg to 104 kg`, `105 kg to 114 kg`, `115 kg and over`
+
+**Examples:**
+
+Download only men's leaderboard:
+
+```bash
+bash segment_downloader 12345678 --filter-sex "Men"
+```
+
+Download specific age groups:
+
+```bash
+bash segment_downloader 12345678 --filter-weight "75 to 84 kg,85 to 94 kg"
+```
+
+Combine multiple filters:
+
+```bash
+bash segment_downloader 12345678 --filter-sex "Men" --filter-age "25 to 34,35 to 44" --filter-weight "75 to 84 kg"
+```
+
+**Notes on filtering:**
+- If no filters are specified, all categories are downloaded (default behavior)
+- Multiple values for each filter can be specified using comma-separated lists
+- The script validates filter values and will show an error if invalid values are provided
+- Filters are saved in the state file, so the `--resume` option will continue with the same filters
+
 ## Usage with large segments
 
 To work around Strava's rate limit we recommend the following strategy:
@@ -139,6 +181,15 @@ To work around Strava's rate limit we recommend the following strategy:
 gtimeout -f -s INT 10m python segment_downloader.py 2891805
 # Call the script with the resume option as often as needed by repeating the following line:
 gtimeout -f -s INT 10m python segment_downloader.py --resume 2891805
+```
+
+**Using filters to reduce download time:**
+
+For very large segments, using demographic filters can dramatically reduce download time and help avoid rate limits:
+
+```bash
+# Download only specific demographics to reduce total download time
+segment_downloader 12345678 --filter-sex "Men" --filter-age "25 to 34,35 to 44"
 ```
 
 Note: By default `gtimeout` repeats the signal if the script doesn't exit instantly. As we catch SIGINT and save the data, sending the signal

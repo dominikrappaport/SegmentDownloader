@@ -7,15 +7,15 @@ Written by Dominik Rappaport, dominik@rappaport.at, 2024
 """
 
 from .authenticate import authenticate
+from .constants import (
+    CATEGORIES_AGE,
+    CATEGORIES_SEX,
+    CATEGORIES_WEIGHT,
+    FILENAME_COOKIES,
+    FILENAME_STATE,
+)
 from .downloader import SegmentDownloader
 from .exceptions import SegmentDownloaderException
-from .constants import (
-    FILENAME_STATE,
-    FILENAME_COOKIES,
-    CATEGORIES_SEX,
-    CATEGORIES_AGE,
-    CATEGORIES_WEIGHT,
-)
 
 __all__ = [
     "authenticate",
@@ -28,7 +28,7 @@ __all__ = [
     "CATEGORIES_WEIGHT",
 ]
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 __author__ = "Dominik Rappaport"
 __email__ = "dominik@rappaport.at"
 __license__ = "MIT"

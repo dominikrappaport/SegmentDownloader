@@ -7,18 +7,18 @@ Written by Dominik Rappaport, dominik@rappaport.at, 2024
 import csv
 import pickle
 import time
-from typing import List, Dict, Tuple, Optional
+from typing import Dict, List, Optional, Tuple
 
 from selenium import webdriver
-from selenium.common.exceptions import WebDriverException, NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, WebDriverException
 from selenium.webdriver.common.by import By
 
 from .constants import (
-    FILENAME_STATE,
-    FILENAME_COOKIES,
-    CATEGORIES_SEX,
     CATEGORIES_AGE,
+    CATEGORIES_SEX,
     CATEGORIES_WEIGHT,
+    FILENAME_COOKIES,
+    FILENAME_STATE,
 )
 from .exceptions import SegmentDownloaderException
 
@@ -29,13 +29,25 @@ LeaderBoardFilterType = Tuple[Optional[str], Optional[str], Optional[str]]
 class SegmentDownloader:
     """Implements all methods to download the leaderboard from Strava."""
 
-    def __init__(self, segment_id: str):
+    def __init__(
+        self,
+        segment_id: str,
+        sex_filters: Optional[List[str]] = None,
+        age_filters: Optional[List[str]] = None,
+        weight_filters: Optional[List[str]] = None,
+    ):
         """Initialize the SegmentDownloader object.
 
         :param segment_id: The segment ID as a string
+        :param sex_filters: List of sex categories to filter (None = all)
+        :param age_filters: List of age categories to filter (None = all)
+        :param weight_filters: List of weight categories to filter (None = all)
 
         :exception SegmentDownloaderException: If the driver can't be created."""
         self.segment_id: str = segment_id
+        self.sex_filters: List[str] = sex_filters or CATEGORIES_SEX
+        self.age_filters: List[str] = age_filters or CATEGORIES_AGE
+        self.weight_filters: List[str] = weight_filters or CATEGORIES_WEIGHT
         self.completed_phase: int = 0
         self.completed_page: int = 0
         self.driver = None
@@ -232,9 +244,7 @@ class SegmentDownloader:
         try:
             self.__apply_filters(filters)
         except WebDriverException as exc:
-            raise SegmentDownloaderException(
-                f"Can't apply the filters ({exc.msg})."
-            ) from exc
+            return
 
         while True:
             try:
@@ -257,14 +267,14 @@ class SegmentDownloader:
         """Apply the filters to the leaderboard view."""
         if "age" in filters:
             self.driver.find_element(
-                By.CSS_SELECTOR, "li:nth-child(11) .expand"
+                By.CSS_SELECTOR, ".list-unstyled:nth-child(5) .expand"
             ).click()
             time.sleep(3)
             self.driver.find_element(By.LINK_TEXT, filters["age"]).click()
             time.sleep(3)
         if "weight" in filters:
             self.driver.find_element(
-                By.CSS_SELECTOR, "li:nth-child(10) .expand"
+                By.CSS_SELECTOR, ".list-unstyled:nth-child(6) .expand"
             ).click()
             time.sleep(3)
             self.driver.find_element(By.LINK_TEXT, filters["weight"]).click()
@@ -305,21 +315,48 @@ class SegmentDownloader:
             self.__scrape_current_leaderboard({}, phase_counter)
             phase_counter += 1
 
-            for s in CATEGORIES_SEX:
-                for a in CATEGORIES_AGE:
+            for s in self.sex_filters:
+                for a in self.age_filters:
                     self.__scrape_current_leaderboard(
                         {"sex": s, "age": a}, phase_counter
                     )
                     phase_counter += 1
 
-            for s in CATEGORIES_SEX:
-                for w in CATEGORIES_WEIGHT:
+            for s in self.sex_filters:
+                for w in self.weight_filters:
                     self.__scrape_current_leaderboard(
                         {"sex": s, "weight": w}, phase_counter
                     )
                     phase_counter += 1
 
             self.__add_attributes()
+
+            # TODO filter out attributes not matching the selected filters
+            filter_sex_present = not self.sex_filters == CATEGORIES_SEX
+            filter_age_present = not self.age_filters == CATEGORIES_AGE
+            filter_weight_present = not self.weight_filters == CATEGORIES_WEIGHT
+            filter_present = (
+                filter_sex_present or filter_age_present or filter_weight_present
+            )
+
+            if filter_present:
+
+                def match_cli_filters(entry) -> bool:
+                    return (
+                        (not filter_sex_present or entry["Sex"] in self.sex_filters)
+                        and (
+                            not filter_age_present
+                            or entry["Age group"] in self.age_filters
+                        )
+                        and (
+                            not filter_weight_present
+                            or entry["Weight group"] in self.weight_filters
+                        )
+                    )
+
+                self.leaderboard_data[(None, None, None)] = list(
+                    filter(match_cli_filters, self.leaderboard_data[(None, None, None)])
+                )
 
             self.__write_to_csv()
         except WebDriverException as exc:
