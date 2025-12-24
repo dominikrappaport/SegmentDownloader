@@ -18,18 +18,18 @@ Written by Dominik Rappaport, dominik@rappaport.at, 2024
 import csv
 import pickle
 import time
-from typing import List, Dict, Tuple, Optional
+from typing import Dict, List, Optional, Tuple
 
 from selenium import webdriver
-from selenium.common.exceptions import WebDriverException, NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, WebDriverException
 from selenium.webdriver.common.by import By
 
 from .constants import (
-    FILENAME_STATE,
-    FILENAME_COOKIES,
-    CATEGORIES_SEX,
     CATEGORIES_AGE,
+    CATEGORIES_SEX,
     CATEGORIES_WEIGHT,
+    FILENAME_COOKIES,
+    FILENAME_STATE,
 )
 from .exceptions import SegmentDownloaderException
 
